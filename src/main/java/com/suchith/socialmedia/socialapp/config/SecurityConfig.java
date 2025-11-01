@@ -16,8 +16,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.List;
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 public class SecurityConfig {
@@ -38,22 +38,31 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
+    /**
+     * CORS configuration:
+     * - Must list each allowed origin explicitly when allowCredentials(true) is used.
+     * - Replace the two placeholder URLs below with your actual deployed domains exactly (no trailing slash).
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
+
         config.setAllowedOrigins(List.of(
+                // Local dev Vite ports you used
                 "http://localhost:5173",
                 "http://localhost:5174",
                 "http://localhost:5175",
-                // ✅ add your deployed backend URL
-                "https://socialapp-production.up.railway.app",
-                // ✅ add your deployed frontend URL (we’ll replace this once Vercel is live)
-                "https://your-frontend.vercel.app"
+
+                // Replace with your actual Railway backend domain if needed (usually not required here),
+                // and your frontend production URL (Vercel).
+                // Example (replace these exact values with yours):
+                "https://social-app-backend-production-9580.up.railway.app",
+                "https://https://social-app-frontend-eight.vercel.app/"
         ));
 
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(true);
+        config.setAllowedHeaders(List.of("*")); // allow Authorization, Content-Type etc.
+        config.setAllowCredentials(true); // allow cookies / Authorization header with credentials
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
@@ -64,39 +73,36 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
+                // IMPORTANT: enable cors with our CorsConfigurationSource bean
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // 🔓 Public endpoints
+                        // Public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/posts/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/posts/*/likes").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/posts/*/comments").permitAll()
-                        // ✅ Public user profile viewing
+                        // profile viewing public
                         .requestMatchers(HttpMethod.GET, "/api/users/**").permitAll()
 
-                        // 🔒 Posts (create/update/delete require login)
+                        // Protected endpoints
                         .requestMatchers(HttpMethod.POST, "/api/posts/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/posts/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/posts/**").authenticated()
 
-                        // 🔒 Likes
                         .requestMatchers(HttpMethod.POST, "/api/posts/*/like").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/posts/*/unlike").authenticated()
 
-                        // 🔒 Comments
                         .requestMatchers(HttpMethod.POST, "/api/posts/*/comments").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/posts/*/comments/*").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/posts/*/comments/*").authenticated()
 
-                        // 🔒 Follow system
                         .requestMatchers(HttpMethod.POST, "/api/follow/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/follow/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/follow/**").authenticated()
 
-                        // 🔒 Feed (must be logged in to see your feed)
                         .requestMatchers(HttpMethod.GET, "/api/feed").authenticated()
 
-                        // 🔒 Fallback: everything else requires auth
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
