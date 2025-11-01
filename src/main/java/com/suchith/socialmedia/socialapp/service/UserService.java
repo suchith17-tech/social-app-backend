@@ -1,20 +1,20 @@
 package com.suchith.socialmedia.socialapp.service;
 
 import com.suchith.socialmedia.socialapp.model.User;
+import com.suchith.socialmedia.socialapp.payload.UserUpdateRequest;
 import com.suchith.socialmedia.socialapp.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
 
-
-
 @Service
+@Transactional
 public class UserService {
 
     @Autowired
@@ -35,10 +35,7 @@ public class UserService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use");
         });
 
-
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-
-
         return userRepository.save(user);
     }
 
@@ -60,6 +57,7 @@ public class UserService {
         userRepository.deleteById(id);
     }
 
+    // ✅ Update a user's username/email
     public User updateUser(Long id, User updated) {
         User existing = userRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
@@ -88,6 +86,7 @@ public class UserService {
         return userRepository.save(existing);
     }
 
+    // ✅ Login verification
     public User login(String username, String rawPassword) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
@@ -102,5 +101,14 @@ public class UserService {
         return userRepository.findByUsername(username);
     }
 
+    // ✅ NEW: Update profile (Edit Profile page)
+    public void updateProfile(String currentUsername, UserUpdateRequest req) {
+        User user = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
+        if (req.getName() != null) user.setName(req.getName());
+        if (req.getBio() != null) user.setBio(req.getBio());
+
+        userRepository.save(user);
+    }
 }

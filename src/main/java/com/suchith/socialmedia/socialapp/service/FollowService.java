@@ -94,12 +94,16 @@ public class FollowService {
         User current = userRepository.findByUsername(currentUsername)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
+        // get followed users
         List<User> following = followRepository.findByFollower(current)
                 .stream().map(Follow::getFollowing).collect(Collectors.toList());
 
-        if (following.isEmpty()) return Collections.emptyList();
+        // include current user's own posts in the feed
+        following.add(current);
 
+        // fetch posts in descending order of creation
         List<Post> posts = postRepository.findByUserInOrderByCreatedAtDesc(following);
+
         return posts.stream()
                 .map(p -> new PostResponse(
                         p.getId(),
@@ -110,4 +114,5 @@ public class FollowService {
                 ))
                 .collect(Collectors.toList());
     }
+
 }

@@ -2,6 +2,7 @@ package com.suchith.socialmedia.socialapp.controller;
 
 import com.suchith.socialmedia.socialapp.model.User;
 import com.suchith.socialmedia.socialapp.service.UserService;
+import com.suchith.socialmedia.socialapp.payload.UserUpdateRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -45,7 +46,7 @@ public class UserController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // ✅ Update
+    // ✅ Update (admin style)
     @PutMapping("/{id}")
     public ResponseEntity<User> updateUser(
             @PathVariable Long id,
@@ -73,5 +74,15 @@ public class UserController {
                     return ResponseEntity.ok(u);
                 })
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    // ✅ Update logged-in user's profile (name/bio)
+    @PutMapping("/me")
+    public ResponseEntity<?> updateProfile(
+            @RequestBody UserUpdateRequest req,
+            Authentication authentication) {
+        String username = authentication.getName();
+        userService.updateProfile(username, req);
+        return ResponseEntity.ok("Profile updated");
     }
 }
