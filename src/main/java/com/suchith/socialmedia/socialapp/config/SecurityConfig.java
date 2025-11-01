@@ -57,7 +57,7 @@ public class SecurityConfig {
                 // and your frontend production URL (Vercel).
                 // Example (replace these exact values with yours):
                 "https://social-app-backend-production-9580.up.railway.app",
-                "https://social-app-frontend-eight.vercel.app/"
+                "https://social-app-frontend-eight.vercel.app"
         ));
 
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
